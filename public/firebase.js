@@ -35,24 +35,35 @@ const dbRef = ref(db, "chat"); //RealtimeDB内の"chat"を使う
 
 
 //firebaseデータ登録
-$("#send").on("click", function() {
+
+function dataSender(type) {
     let now = new Date();
     let msg = {
         uname: name,
         text: $("#input").val(),
         channel: room_name,
+        dataType:type,
         timestamp: now.toLocaleString() //現在時刻をタイムスタンプの値に設定
     };
+    console.log($("#input").val()+'inputValue');
     const newPostRef = push(dbRef); //ユニークKEYを生成
     set(newPostRef, msg); //"chat"にユニークKEYをつけてオブジェクトデータを登録
+}
+
+//メッセージ送信時発火
+$("#send").on("click", function(){
+    dataSender('msg');
 });
 
 
-
+//ファイルのやりとりのあれこれ（仮）
 
 // input要素
 const fileInput = document.getElementById('sendFile');
 const fileDownload = document.getElementById('dlFile');
+
+//------------ファイル選択＆storageへアップロード------------------
+
 // changeイベントで呼び出す関数
 const handleFileSelect = () => {
         const files = fileInput.files;
@@ -73,34 +84,53 @@ const handleFileSelect = () => {
     }
     // ファイル選択時にhandleFileSelectを発火
 fileInput.addEventListener('change', handleFileSelect);
+//----------------------------------------------------------
 
-const fileDownloader= () =>{
+
+
+//fileNameと同じ名前のファイルのリンクをfirebase storageから取得＋リンクをセットするメソッドを呼び出し
+const fileDownloader = () => {
     const storage = getStorage();
-    getDownloadURL(sRef(storage, 'anim.gif'))
-    .then((url) => {
-        // `url` is the download URL for 'images/stars.jpg'
+    let fileName = "Proj_06.pptx";     //仮
+    getDownloadURL(sRef(storage, fileName))
+        .then((url) => {
+            // `url` is the download URL for 'images/stars.jpg'
 
-        // This can be downloaded directly:
-        const xhr = new XMLHttpRequest();
-        xhr.responseType = 'blob';
-        xhr.onload = (event) => {
-            const blob = xhr.response;
-        };
-        xhr.open('GET', url);
-        xhr.send();
+            // This can be downloaded directly:
+            const xhr = new XMLHttpRequest();
+            xhr.responseType = 'blob';
+            xhr.onload = (event) => {
+                const blob = xhr.response;
+            };
+            xhr.open('GET', url);
+            xhr.send();
 
-        // Or inserted into an <img> element
-        const img = document.getElementById('myimg');
-        img.setAttribute('src', url);
-    })
-    .catch((error) => {
-        // Handle any errors
-    });
+            // Or inserted into an <img> element
+            const img = document.getElementById('myimg');
+            img.setAttribute('src', url);//imgタグに画像リンクを設定
+
+            // console.log(url);
+            fileLinkSet(url,fileName);//ファイル保存ボタンにファイルリンクをセット
+        })
+        .catch((error) => {
+            // Handle any errors
+        });
+}
+//”取得”ボタンのクリックイベントの発火
+fileDownload.addEventListener('click', fileDownloader);
+
+// ファイルリンクを"ファイル保存"ボタンに設定
+function fileLinkSet(dlUrl,name){
+    const url = dlUrl;
+    const fileName = name;
+    
+    let link = document.getElementById("fileSave");
+    link.href= url;
+    link.download = fileName;
 }
 
-fileDownload.addEventListener('click',fileDownloader);
 
-
+//メッセージを追加
 onChildAdded(dbRef, function(data) {
     let log = data.val();
     if (x == 0) { //1番最初のリロード・チャット表示(general宛だけ)

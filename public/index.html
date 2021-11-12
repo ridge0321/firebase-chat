@@ -109,11 +109,8 @@
           />
           <input type="text" id="DMtext" placeholder="【DM】送りたい人の名前" />
           <!-- <button onclick="addroom()">追加</button> -->
-          <form>
-            <input id="sendFile" type="file" name="file" multiple>
-        </form>
-        <button id='dlFile'>ファイル取得仮</button>
-        ,<img id='myimg' src="" alt="">
+
+        <img id='myimg' src="" alt="">
 
           <p>チームメンバー</p>
           <ul class="online_user"></ul>
@@ -147,7 +144,7 @@
             id="input"
             placeholder="#チャンネルにメッセージを送信する"
             autocomplete="off"
-            onkeyup="inputCheck()"
+            onkeyup="inputCheck()" 
           /><button id="send">Send</button>
 
           <label id="fileform">
@@ -156,6 +153,10 @@
               alt=""
             />
             <input type="file" id="file" style="display: none" />
+            <input id="sendFile" type="file" name="file" multiple>
+            <button id='dlFile'>取得</button>
+            <button><a href="" download target="_blank" id="fileSave" class="btn btn-success">ファイル保存</a></button>
+            
           </label>
         </form>
       </div>

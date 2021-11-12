@@ -30,15 +30,7 @@ io.on('connection', (socket) => {
 
     io.to(room).emit('chat message', msg + "【＠" + socket.userName + "】");
     makelog(msg);
-    //tuika
-    // this.firestore.collection('messages').add({
-    //   name:"User Name",
-    //   message: msg,
-    //   })
-    //   .catch(function(error){
-    //       console.error("Error adding document: ",error);
-    //   });
-    //tuika
+
   });
 
 
@@ -67,7 +59,7 @@ io.on('connection', (socket) => {
         // console.log(array[1]);//name
         // console.log(array[2]);//メッセ―ジ
         if (array[0].indexOf(room) !== -1) {
-        io.to(room).emit('restore message', array[2] + "【＠" + array[1] + "】",name2);//切り替え先の部屋の過去チャット復元
+        io.to(room).emit('restore message', array[2] + "【＠" + array[1] + "】",name2,array[3]);//切り替え先の部屋の過去チャット復元
         array = [];
       } 
     });
@@ -130,6 +122,7 @@ io.on('connection', (socket) => {
   });
   //ログ保存
   function makelog(msg_stamp) {
+    let now = new Date();
     mlog.push(msg_stamp)
     mlog.push(socket.userName)
 
@@ -139,6 +132,7 @@ io.on('connection', (socket) => {
         roomID: room,
         namelog: socket.userName,
         msg_stamp_log: msg_stamp,
+        stimestamp:  now.toLocaleString(),
       });
       //console.log(log);
 

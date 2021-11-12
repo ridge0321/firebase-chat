@@ -1,16 +1,16 @@
-$(function() {
+$(function () {
     $("#select2").select2({
         width: "50%",
         placeholder: "#,@検索",
         background: "blue",
     });
 });
-$(function() {
-    $(".js-modal-open").on("click", function() {
+$(function () {
+    $(".js-modal-open").on("click", function () {
         $(".js-modal").fadeIn();
         return false;
     });
-    $(".js-modal-close").on("click", function() {
+    $(".js-modal-close").on("click", function () {
         $(".js-modal").fadeOut();
         return false;
     });
@@ -26,7 +26,7 @@ function addprivateroom() {
     $(".channel_list").prepend(
         `<button id="bt" >#${inputValue}</button><br>`
     );
-    $("#bt").click(inputValue, function(e) {
+    $("#bt").click(inputValue, function (e) {
         moveToRoom(inputValue);
     });
     $("#Channel").append(`<option>#${inputValue}</option>`);
@@ -41,7 +41,7 @@ function addroom() {
     $(".channel_list").prepend(
         `<button id="bt" >#${inputValue}</button><br>`
     );
-    $("#bt").click(inputValue, function(e) {
+    $("#bt").click(inputValue, function (e) {
         moveToRoom(inputValue);
     });
     $("#Channel").append(`<option>#${inputValue}</option>`);
@@ -83,10 +83,10 @@ form.addEventListener("submit", (e) => {
 socket.on("chat message", (msg) => {
     //appendMessage(msg);
 });
-socket.on("restore message", (message, name2) => {
+socket.on("restore message", (message, name2, time) => {
     //部屋移動先メッセ復元
     if (name == name2) {
-        restoreMessage(message);
+        restoreMessage(message, time);
     }
     name2 = "";
 });
@@ -112,7 +112,7 @@ socket.on("image", (imageData) => {
         var ctx = canvas.getContext("2d");
         var img = new Image();
         img.src = imageData;
-        img.onload = function() {
+        img.onload = function () {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -136,10 +136,11 @@ function sendImage(event) {
 
 const appendMessage = (message, sender_name, timestamp) => {
     //チャット表示
+    var time = timestamp.slice(5, -3);
     let n = 0;
     const item = document.createElement("li");
     item.className = "msglist";
-    item.onmouseover = function() {
+    item.onmouseover = function () {
         if (n == 0) {
             item.innerHTML += `<button type="button" id="button_1" onclick="sendStamp(1)">👍</button>`;
             item.innerHTML += `<button type="button" id="button_2" onclick="sendStamp(2)">👎</button>`;
@@ -148,17 +149,17 @@ const appendMessage = (message, sender_name, timestamp) => {
         }
         n = 1;
     };
-    item.textContent = message + "【@" + sender_name + "】" + timestamp;
+    item.textContent = message + "【@" + sender_name + "】" + time;
     messages.appendChild(item);
     window.scrollTo(0, document.body.scrollHeight);
 };
-//tuika
-const restoreMessage = (message) => {
+const restoreMessage = (message, timestamp) => {
     //部屋移動したとき復元
+    var time = timestamp.slice(5, -3);
     let n = 0;
     const item = document.createElement("li");
     item.className = "msglist";
-    item.onmouseover = function() {
+    item.onmouseover = function () {
         if (n == 0) {
             item.innerHTML += `<button type="button" id="button_1" onclick="sendStamp(1)">👍</button>`;
             item.innerHTML += `<button type="button" id="button_2" onclick="sendStamp(2)">👎</button>`;
@@ -167,7 +168,7 @@ const restoreMessage = (message) => {
         }
         n = 1;
     };
-    item.textContent = message;
+    item.textContent = message + time;
     messages.appendChild(item);
     window.scrollTo(0, document.body.scrollHeight);
 };
@@ -182,7 +183,7 @@ socket.on("stop typing", () => {
 });
 socket.on("ch create", (ch) => {
     $(".channel_list").prepend(`<button id="bt" >#${ch}</button><br>`);
-    $("#bt").click(ch, function(e) {
+    $("#bt").click(ch, function (e) {
         moveToRoom(ch);
     });
 });
@@ -190,7 +191,7 @@ socket.on("ch create", (ch) => {
 socket.on("DM create", (dm, receiver_1, sender_1) => {
     if (name == receiver_1 || name == sender_1) {
         $(".DM_list").prepend(`<button id="bt_dm" >📩${dm}</button><br>`);
-        $("#bt_dm").click(dm, function(e) {
+        $("#bt_dm").click(dm, function (e) {
             moveToRoom(dm);
         });
     }
