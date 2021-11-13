@@ -1,8 +1,6 @@
 // Import the functions you need from the SDKs you need
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-// import firebase from 'firebase/compat/app';
-// import 'firebase/compat/storage';
 import { getStorage, uploadBytes, ref as sRef, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-storage.js';
 import {
     getDatabase,
@@ -16,8 +14,6 @@ import {
 // Your web app's Firebase configuration
 
 
-
-// import "firebase/compat/storage ";
 const firebaseConfig = {
     apiKey: "AIzaSyDooaWi5DcWY0oKpOm5z8W0uFc-7uK3754",
     authDomain: "test-47d47.firebaseapp.com",
@@ -36,23 +32,25 @@ const dbRef = ref(db, "chat"); //RealtimeDB内の"chat"を使う
 
 //firebaseデータ登録
 
-function dataSender(type) {
+function dataSendToDB(txt,type, fName, url) {
     let now = new Date();
     let msg = {
         uname: name,
-        text: $("#input").val(),
+        text: txt,
         channel: room_name,
-        dataType:type,
+        dataType: type,
+        fileName: fName,
+        fileUrl: url,
         timestamp: now.toLocaleString() //現在時刻をタイムスタンプの値に設定
     };
-    console.log($("#input").val()+'inputValue');
+
     const newPostRef = push(dbRef); //ユニークKEYを生成
     set(newPostRef, msg); //"chat"にユニークKEYをつけてオブジェクトデータを登録
 }
 
 //メッセージ送信時発火
-$("#send").on("click", function(){
-    dataSender('msg');
+$("#send").on("click", function() {
+    dataSendToDB($("#input").val(),'msg', 'null', 'null');
 });
 
 
@@ -60,23 +58,36 @@ $("#send").on("click", function(){
 
 // input要素
 const fileInput = document.getElementById('sendFile');
-const fileDownload = document.getElementById('dlFile');
 
 //------------ファイル選択＆storageへアップロード------------------
 
-// changeイベントで呼び出す関数
-const handleFileSelect = () => {
+//以下を行う
+//1.ファイルをstorageへ送信
+//2.storageに保存されたファイルのurlを取得
+//3.取得したurlをRealtimeDatabaseに記録
+
+const handleFileSelect = async() => {
         const files = fileInput.files;
         for (let i = 0; i < files.length; i++) {
 
-            console.log(files[i].name);　 // 1つ1つのファイルデータはfiles[i]で取得できる
             let file = files[i];
-
+            let fileName = files[i].name;
             const storage = getStorage();
-            const imageRef = sRef(storage, files[i].name);
-            uploadBytes(imageRef, file).then((snapshot) => {
+            const imageRef = sRef(storage, fileName);
+
+//1.ファイルをstorageへ送信
+            await uploadBytes(imageRef, file).then((snapshot) => {
                 console.log('Uploaded a blob or file!');
             });
+//2.storageに保存されたファイルのurlを取得
+            let fileUrl = await fileUrlDownloader(fileName); //アップロード完了後にUrlを取りにいく
+
+//3.取得したurlをRealtimeDatabaseに記録
+            if(checkImgExt(fileName)){
+                dataSendToDB(fileName,'img',fileName,fileUrl);
+            }else{
+                dataSendToDB(fileName,'other',fileName,fileUrl);
+            };
 
 
         }
@@ -89,57 +100,54 @@ fileInput.addEventListener('change', handleFileSelect);
 
 
 //fileNameと同じ名前のファイルのリンクをfirebase storageから取得＋リンクをセットするメソッドを呼び出し
-const fileDownloader = () => {
-    const storage = getStorage();
-    let fileName = "Proj_06.pptx";     //仮
-    getDownloadURL(sRef(storage, fileName))
-        .then((url) => {
-            // `url` is the download URL for 'images/stars.jpg'
+//getDownloadURLの呼び出し＋Urlを返す
+const fileUrlDownloader = async(fileName) => {
+        // console.log(fileName);
+        const storage = getStorage();
+        let getUrl; //戻り値格納用変数
 
-            // This can be downloaded directly:
-            const xhr = new XMLHttpRequest();
-            xhr.responseType = 'blob';
-            xhr.onload = (event) => {
-                const blob = xhr.response;
-            };
-            xhr.open('GET', url);
-            xhr.send();
+        await getDownloadURL(sRef(storage, fileName)) //処理に時間がかかるのでawaitが必要
+            .then((url) => {
+                // `url` is the download URL for 'images/stars.jpg'
 
-            // Or inserted into an <img> element
-            const img = document.getElementById('myimg');
-            img.setAttribute('src', url);//imgタグに画像リンクを設定
+                // This can be downloaded directly:
+                const xhr = new XMLHttpRequest();
+                xhr.responseType = 'blob';
+                xhr.onload = (event) => {
+                    const blob = xhr.response;
+                };
+                xhr.open('GET', url);
+                xhr.send();
+                getUrl = url;
 
-            // console.log(url);
-            fileLinkSet(url,fileName);//ファイル保存ボタンにファイルリンクをセット
-        })
-        .catch((error) => {
-            // Handle any errors
-        });
-}
-//”取得”ボタンのクリックイベントの発火
-fileDownload.addEventListener('click', fileDownloader);
-
-// ファイルリンクを"ファイル保存"ボタンに設定
-function fileLinkSet(dlUrl,name){
-    const url = dlUrl;
-    const fileName = name;
-    
-    let link = document.getElementById("fileSave");
-    link.href= url;
-    link.download = fileName;
-}
+            })
+            .catch((error) => {
+                // Handle any errors
+            });
+        return getUrl;
+    }
 
 
 //メッセージを追加
 onChildAdded(dbRef, function(data) {
     let log = data.val();
+    // console.log(log.fileName);
+    // console.log(log.fileUrl);
     if (x == 0) { //1番最初のリロード・チャット表示(general宛だけ)
         if (log.channel == "general") {
-            appendMessage(log.text, log.uname, log.timestamp);
+            appendContent(log.uname, log.text,log.dataType,log.fileUrl, log.timestamp);
         }
     }
     if (x > 1000) { //以降変更が加わったらチャット表示
-        appendMessage(log.text, log.uname, log.timestamp);
+        appendContent(log.uname, log.text,log.dataType,log.fileUrl, log.timestamp);
     }
 
 });
+
+//ファイル送受信のプロセス
+//---------------------
+//1.ファイルをstorageへ送信
+//2.storageに保存されたファイルのurlを取得
+//3.取得したurlをRealtimeDatabaseに記録
+//4.RDが各ユーザーに追加されたデータを送る  （onChildAdded）
+//5.送信されたデータをメッセージ・画像・ファイルに応じた方法で表示 (appendMessage等)

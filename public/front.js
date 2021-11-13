@@ -124,6 +124,27 @@ socket.on("image", (imageData) => {
     }
 });
 
+//アップロードを許可する拡張子
+//jpg jpeg png gif をimgタグで表示するため拡張子判定を行う
+var allow_exts = new Array('jpg', 'jpeg', 'png','gif');
+
+//アップロード予定のファイル名の拡張子が許可されているか確認する関数
+function checkImgExt(fileName)
+{
+	//比較のため小文字にする
+	var ext = getExt(fileName).toLowerCase();
+	//許可する拡張子の一覧(allow_exts)から対象の拡張子があるか確認する
+	if (allow_exts.indexOf(ext) === -1) return false;
+	return true;
+}
+
+//ファイル名を渡して拡張子を返す
+function getExt(fileName) {
+    var pos = fileName.lastIndexOf('.');
+    if (pos === -1) return '';
+    return fileName.slice(pos + 1);
+}
+
 function sendImage(event) {
     let file = event.target.files[0];
     let reader = new FileReader();
@@ -134,8 +155,30 @@ function sendImage(event) {
     reader.readAsDataURL(file);
 }
 
-const appendMessage = (message, sender_name, timestamp) => {
-    //チャット表示
+// const appendMessage = (message, sender_name, timestamp) => {
+//     //チャット表示
+//     var time = timestamp.slice(5, -3);
+//     let n = 0;
+//     const item = document.createElement("li");
+//     item.className = "msglist";
+//     item.onmouseover = function () {
+//         if (n == 0) {
+//             item.innerHTML += `<button type="button" id="button_1" onclick="sendStamp(1)">👍</button>`;
+//             item.innerHTML += `<button type="button" id="button_2" onclick="sendStamp(2)">👎</button>`;
+//             item.innerHTML += `<button type="button" id="button_3" onclick="sendStamp(3)">🖕</button>`;
+//             item.innerHTML += `<button type="button" id="button_4" onclick="sendStamp(4)">👋</button>`;
+//         }
+//         n = 1;
+//     };
+//     item.textContent = message + "【@" + sender_name + "】" + time;
+//     messages.appendChild(item);
+//     window.scrollTo(0, document.body.scrollHeight);
+//     console.log('apendMessage');
+// };
+
+//appendMessage拡張版
+//引数のデータタイプに応じた表示に切り替えてappendする
+const appendContent = (sender_name,text,dataType,fileUrl,timestamp)=>{
     var time = timestamp.slice(5, -3);
     let n = 0;
     const item = document.createElement("li");
@@ -149,10 +192,40 @@ const appendMessage = (message, sender_name, timestamp) => {
         }
         n = 1;
     };
-    item.textContent = message + "【@" + sender_name + "】" + time;
+
+    switch (dataType) {
+        case 'msg': //itemにmsg格納
+            item.textContent = text + "【@" + sender_name + "】" + time;
+            // console.log('msg');
+            break;
+    
+        case 'img': //imgタグをつくって画像表示
+            const imageData=document.createElement("img");
+            imageData.classList.add('appendImg')
+            imageData.src=fileUrl;
+            // imageData.width=300;
+            item.appendChild(imageData);
+            // console.log('img');
+            break;
+
+        case 'other':   //aタグでファイルリンク表示
+            const urlLink= document.createElement("a");
+            const subText= document.createElement("div");
+            urlLink.textContent=text;
+            urlLink.href=fileUrl;
+            urlLink.download="";
+            urlLink.target="_blank";
+            subText.textContent="【@" + sender_name + "】" + time;
+            item.appendChild(urlLink);
+            item.appendChild(subText);
+            // console.log('other');
+            break;
+    }
+
     messages.appendChild(item);
     window.scrollTo(0, document.body.scrollHeight);
-};
+}
+
 const restoreMessage = (message, timestamp) => {
     //部屋移動したとき復元
     var time = timestamp.slice(5, -3);
